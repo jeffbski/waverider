@@ -25,9 +25,9 @@ waverider CMS - lightweight fast CMS/blog with realtime edit and preview written
 
 ## Why build another CMS/blog?
 
-I have not found a CMS/blog with my desired feature set that is fast and simple. The evented nature of Node.js is a compelling platform for realtime delivery and scalability. I believe that building a lightweight CMS/blog architecture on Node.js will be more successfull than tring to retrofit an existing project.
+I have not found a CMS/blog with my desired feature set that is also fast and simple. The evented nature of Node.js is a compelling platform for realtime delivery and scalability. I believe that building a lightweight CMS/blog architecture on Node.js will be more successfull (and enjoyable) than tring to retrofit an existing project.
 
-This platform will allow me to use the latest technologies and practices, and even if this proves fruitless, it will nonetheless be a great experiment and learning space for testing out these technologies.
+This platform will allow me to use the latest technologies and practices, and even if this proves fruitless, it will nonetheless be a great experiment and learning space for testing out these new technologies.
 
 ## Planned technology stack
 
