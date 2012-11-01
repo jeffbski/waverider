@@ -6,7 +6,7 @@
 var strata = require('strata');
 var mock = strata.mock;
 
-var app = require('../').app;
+var app = require('../').app; // require('waverider')
 
 var chai = require('chai');
 var t = chai.assert;
