@@ -10,6 +10,7 @@
   "engines": { "node": ">=0.6" },
   "dependencies": {
     "amdefine": "~0.0.2",
+    "redis": "~0.8.2",
     "strata": "~0.18.1"
   },
   "devDependencies": {
