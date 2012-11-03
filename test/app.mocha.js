@@ -6,22 +6,32 @@
 var strata = require('strata');
 var mock = strata.mock;
 
-var app = require('../').app; // require('waverider')
+var app = require('../lib/waverider');
 
-var chai = require('chai');
+var chai = require('chai-stack');
 var t = chai.assert;
 
 suite('app');
 
 test('/ returns Hello World', function (done) {
-  mock.call(app, '/', function (err, status, headers, body) {
+  var env = mock.env({
+    requestMethod: 'PUT',
+    pathInfo: '/foo',
+    params: { a: 1 }
+  });
+  mock.call(app, env, function (err, status, headers, body) {
     t.equal(body, 'Hello World');
+    t.equal(headers['Content-Type'], 'text/plain');
     done();
   });
 });
 
-test('/hello returns Hi', function (done) {
-  mock.call(app, '/hello', function (err, status, headers, body) {
+test('/admin returns Hi', function (done) {
+  var env = mock.env({
+    pathInfo: '/admin',
+    requestMethod: 'GET'
+  });
+  mock.call(app, env, function (err, status, headers, body) {
     t.equal(body, 'Hi');
     done();
   });
