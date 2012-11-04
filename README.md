@@ -2,6 +2,19 @@
 
 waverider CMS - lightweight fast CMS/blog with realtime edit and preview written in javascript for node.js
 
+## Installation
+
+```bash
+npm install ## install dependent node modules
+node lib/prepare-db.js  ## prepare the database
+```
+
+## Usage
+
+```bash
+node lib/server.js
+```
+
 ## Goals
 
  - simple
