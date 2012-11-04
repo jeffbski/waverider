@@ -1,6 +1,7 @@
 'use strict';
 
 var chai = require('chai-stack');
+var Stream = require('stream');
 var cm = require('../lib/content-mgr');
 var digest = require('../lib/digest');
 
@@ -22,7 +23,7 @@ function deleteAll(cb) {
   cm.del(KEY, cb);
 }
 
-test('cm.set(key, obj) saves content, cm.getData(key, cb) retrieves just the data', function (done) {
+test('cm.set(key, data) saves content, cm.getData(key, cb) retrieves just the data', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
   cm.set(KEY, origContent.data, origContent.type, function (err, result) {
     t.isNull(err);
@@ -30,6 +31,29 @@ test('cm.set(key, obj) saves content, cm.getData(key, cb) retrieves just the dat
       t.isNull(err);
       t.equal(data, origContent.data);
       done();
+    });
+  });
+});
+
+test('cm.set(key, stream) saves content, cm.getData(key, cb) retrieves just the data', function (done) {
+  var origDataArr = ["Hello ", "World"];
+  var stream = new Stream();
+  setTimeout(function () {
+    origDataArr.forEach(function (x) { stream.emit('data', x); });
+    stream.emit('end');
+  }, 0);
+  var contentType = 'text/plain';
+  cm.set(KEY, stream, contentType, function (err, result) {
+    t.isNull(err);
+    cm.getData(KEY, function (err, data) {
+      t.isNull(err);
+      var origData = origDataArr.join('');
+      t.equal(data, origData);
+      cm.getDigest(KEY, function (err, dig) {
+        var exptectedDigest = digest(origData);
+        t.equal(dig, exptectedDigest);
+        done();
+      });
     });
   });
 });
