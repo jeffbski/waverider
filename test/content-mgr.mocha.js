@@ -2,6 +2,7 @@
 
 var chai = require('chai-stack');
 var Stream = require('stream');
+var MemoryStream = require('memorystream');
 var cm = require('../lib/content-mgr');
 var digest = require('../lib/digest');
 
@@ -37,13 +38,15 @@ test('cm.set(key, data) saves content, cm.getData(key, cb) retrieves just the da
 
 test('cm.set(key, stream) saves content, cm.getData(key, cb) retrieves just the data', function (done) {
   var origDataArr = ["Hello ", "World"];
-  var stream = new Stream();
+  var wstream = new Stream();
+  var rstream = new MemoryStream();
+  wstream.pipe(rstream);
   setTimeout(function () {
-    origDataArr.forEach(function (x) { stream.emit('data', x); });
-    stream.emit('end');
+    origDataArr.forEach(function (x) { wstream.emit('data', x); });
+    wstream.emit('end');
   }, 0);
   var contentType = 'text/plain';
-  cm.set(KEY, stream, contentType, function (err, result) {
+  cm.set(KEY, rstream, contentType, function (err, result) {
     t.isNull(err);
     cm.getData(KEY, function (err, data) {
       t.isNull(err);
