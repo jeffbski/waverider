@@ -90,6 +90,22 @@ test('cm.getData(key, cb) retrieves just the content', function (done) {
   });
 });
 
+test('cm.getDataStream(key) returns a stream to the content', function (done) {
+  var origContent = { data: 'Foo', type: 'text/plain' };
+  cm.set(KEY, origContent.data, origContent.type, function (err, result) {
+    t.isNull(err);
+    var readStream = cm.getDataStream(KEY);
+    var accum = [];
+    readStream
+      .on('error', function (err) { done(err); })
+      .on('data', function (data) { accum.push(data.toString()); })
+      .on('end', function () {
+        t.equal(accum.join(''), origContent.data);
+        done();
+      });
+  });
+});
+
 test('cm.getType(key, cb) retrieves just the type', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
   cm.set(KEY, origContent.data, origContent.type, function (err, result) {
