@@ -24,7 +24,7 @@ function deleteAll(cb) {
   cm.del(KEY, cb);
 }
 
-test('cm.set(key, data) saves content, cm.getData(key, cb) retrieves just the data', function (done) {
+test('cm.set(key, data) saves content, cm.getData(key, cb) retrieves data alone', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
   cm.set(KEY, origContent.data, origContent.type, function (err, result) {
     t.isNull(err);
@@ -36,7 +36,7 @@ test('cm.set(key, data) saves content, cm.getData(key, cb) retrieves just the da
   });
 });
 
-test('cm.set(key, stream) saves content, cm.getData(key, cb) retrieves just the data', function (done) {
+test('cm.set(key, stream) saves stream, cm.getData(key, cb) retrieves data alone', function (done) {
   var origDataArr = ["Hello ", "World"];
   var wstream = new Stream();
   var rstream = new MemoryStream();
