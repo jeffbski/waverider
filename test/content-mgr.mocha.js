@@ -52,9 +52,9 @@ test('cm.set(key, stream) saves content, cm.getData(key, cb) retrieves just the 
       t.isNull(err);
       var origData = origDataArr.join('');
       t.equal(data, origData);
-      cm.getDigest(KEY, function (err, dig) {
+      cm.getMeta(KEY, function (err, meta) {
         var exptectedDigest = digest(origData);
-        t.equal(dig, exptectedDigest);
+        t.equal(meta.digest, exptectedDigest);
         done();
       });
     });
@@ -106,38 +106,3 @@ test('cm.getDataStream(key) returns a stream to the content', function (done) {
   });
 });
 
-test('cm.getType(key, cb) retrieves just the type', function (done) {
-  var origContent = { data: 'Foo', type: 'text/plain' };
-  cm.set(KEY, origContent.data, origContent.type, function (err, result) {
-    t.isNull(err);
-    cm.getType(KEY, function (err, type) {
-      t.isNull(err);
-      t.equal(type, origContent.type);
-      done();
-    });
-  });
-});
-
-test('cm.getLength(key, cb) retrieves just the length', function (done) {
-  var origContent = { data: 'Foo', type: 'text/plain' };
-  cm.set(KEY, origContent.data, origContent.type, function (err, result) {
-    t.isNull(err);
-    cm.getLength(KEY, function (err, len) {
-      t.isNull(err);
-      t.equal(len, origContent.data.length);
-      done();
-    });
-  });
-});
-
-test('cm.getDigest(key, cb) retrieves the digest of the data', function (done) {
-  var origContent = { data: 'Foo', type: 'text/plain' };
-  cm.set(KEY, origContent.data, origContent.type, function (err, result) {
-    t.isNull(err);
-    cm.getDigest(KEY, function (err, dig) {
-      t.isNull(err);
-      t.equal(dig, digest(origContent.data), 'digest should match');
-      done();
-    });
-  });
-});
