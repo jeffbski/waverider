@@ -7,7 +7,7 @@
   "bugs" : { "url": "http://github.com/jeffbski/waverider/issues" },
   "licenses": [{ "type": "MIT", "url" : "http://github.com/jeffbski/waverider/raw/master/LICENSE" }],
   "main": "lib/server",
-  "engines": { "node": ">=0.6" },
+  "engines": { "node": ">=0.8" },
   "dependencies": {
     "amdefine": "~0.0.2",
     "redis": "~0.8.2",

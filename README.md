@@ -6,6 +6,8 @@ waverider CMS - lightweight fast CMS/blog with realtime edit and preview written
 
 ## Installation
 
+Requires node.js >= 0.8
+
 ```bash
 npm install ## install dependent node modules
 npm install hiredis  ## optional step if you want to use binary redis module
