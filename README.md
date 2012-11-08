@@ -2,6 +2,8 @@
 
 waverider CMS - lightweight fast CMS/blog with realtime edit and preview written in javascript for node.js
 
+[![Build Status](https://secure.travis-ci.org/jeffbski/waverider.png?branch=master)](http://travis-ci.org/jeffbski/waverider)
+
 ## Installation
 
 ```bash
