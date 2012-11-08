@@ -2,9 +2,7 @@
 
 var chai = require('chai-stack');
 var prepare = require('../lib/prepare-db');
-var redis = require('redis');
-
-var rc = redis.createClient();
+var rc = require('../lib/redis-client');
 var t = chai.assert;
 
 suite('prepare-db');
