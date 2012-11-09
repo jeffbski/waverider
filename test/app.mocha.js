@@ -61,6 +61,7 @@ test('GET /foo returns Hello World', function (done) {
     t.equal(headers['Content-Type'], foo.type);
     t.equal(headers['Content-Length'], foo.data.length);
     t.equal(headers.Etag, digest(foo.data));
+    t.isString(headers['Last-Modified'], 'should have last modified date');
     done();
   });
 });
@@ -75,6 +76,7 @@ test('HEAD /foo returns meta', function (done) {
     t.equal(headers['Content-Type'], foo.type);
     t.equal(headers['Content-Length'], foo.data.length);
     t.equal(headers.Etag, digest(foo.data));
+    t.isString(headers['Last-Modified'], 'should have last modified date');
     done();
   });
 });
