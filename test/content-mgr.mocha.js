@@ -25,6 +25,12 @@ function deleteAll(cb) {
   cm.del(KEY, cb);
 }
 
+test('cm.ckey(host, path) calculates content key host:path', function () {
+  t.equal(cm.ckey('localhost', '/foo/bar'), 'localhost:/foo/bar');
+  t.equal(cm.ckey('localhost', '/cat'), 'localhost:/cat');
+  t.equal(cm.ckey('abc.server.com', '/dog/food'), 'abc.server.com:/dog/food');
+});
+
 test('cm.set(key, data) saves content, cm.getData(key, cb) retrieves data alone', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
   cm.set(KEY, origContent.data, origContent.type, function (err, result) {
