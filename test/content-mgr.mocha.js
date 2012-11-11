@@ -83,6 +83,19 @@ test('cm.getMeta(key, cb) retrieves all the meta data', function (done) {
   });
 });
 
+test('cm.getMeta(nonExistentKey, cb) retrieves null meta data', function (done) {
+  var nonExistentKey = '/nonExistentURL';
+  cm.del(nonExistentKey, function (err, result) {
+    t.isNull(err);
+    cm.getMeta(nonExistentKey, function (err, meta) {
+      t.isNull(err);
+      t.isNull(meta);
+      done();
+    });
+  });
+});
+
+
 
 
 test('cm.getData(key, cb) retrieves just the content', function (done) {
@@ -96,6 +109,20 @@ test('cm.getData(key, cb) retrieves just the content', function (done) {
     });
   });
 });
+
+test('cm.getData(nonExistentKey, cb) retrieves null content', function (done) {
+  var nonExistentKey = '/nonExistentURL';
+  cm.del(nonExistentKey, function (err, result) {
+    t.isNull(err);
+    cm.getData(nonExistentKey, function (err, content) {
+      t.isNull(err);
+      t.isNull(content);
+      done();
+    });
+  });
+});
+
+
 
 test('cm.getDataStream(key) returns a stream to the content', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
