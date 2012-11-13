@@ -6,6 +6,7 @@ var MemoryStream = require('memorystream');
 var cm = require('../lib/content-mgr');
 var digest = require('../lib/digest');
 var crypto = require('crypto');
+var zlib = require('zlib');
 
 var t = chai.assert;
 
@@ -31,7 +32,7 @@ test('cm.ckey(host, path) calculates content key host:path', function () {
   t.equal(cm.ckey('abc.server.com', '/dog/food'), 'abc.server.com:/dog/food');
 });
 
-test('cm.set(key, data) saves content, cm.getData(key, cb) retrieves data alone', function (done) {
+test('cm.set(key, data, type) saves content, cm.getData(key, cb) retrieves data alone', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
   cm.set(KEY, origContent.data, origContent.type, function (err, result) {
     t.isNull(err);
@@ -43,8 +44,39 @@ test('cm.set(key, data) saves content, cm.getData(key, cb) retrieves data alone'
   });
 });
 
-test('cm.set(key, stream) saves stream, cm.getData(key, cb) retrieves data alone', function (done) {
-  var origDataArr = ["Hello ", "World", " Goodbye ", "World"];
+test('cm.set(key, data, type, metaGzip) gzips and content, cm.getData(key, cb) retrieves gzipped data', function (done) {
+  var origContent = {
+    data: '<html><body><div>one</div><div>two</div><div>one</div><div>two</div></body></html>',
+    type: 'text/html'
+  };
+  var meta = { preprocess: ['gzip'] };
+  cm.set(KEY, origContent.data, origContent.type, meta, function (err, result) {
+    t.isNull(err);
+    zlib.gzip(origContent.data, function (err, expectedGzipData) {
+      t.isNull(err);
+      cm.getData(KEY, function (err, data) {
+        t.isNull(err);
+        var expectedGzipDigest = digest(expectedGzipData);
+        t.equal(digest(data), expectedGzipDigest);
+        cm.getMeta(KEY, function (err, meta) {
+          t.isNull(err);
+          t.equal(meta.digest, expectedGzipDigest);
+          t.equal(meta['Content-Encoding'], 'gzip');
+          t.isUndefined(meta.preprocess, 'preprocess is stripped out in processing');
+          zlib.gunzip(data, function (err, verifyData) {
+            t.isNull(err);
+            t.equal(verifyData, origContent.data);
+            done();
+          });
+        });
+      });
+    });
+  });
+});
+
+test('cm.set(key, stream, type) saves stream, cm.getData(key, cb) retrieves data alone', function (done) {
+  var meta = { preprocess: ['gzip'] };
+  var origDataArr = ["<html><body><div>one", "</div><div>two</div><d", "iv>one</div><div>two</di", "v></body></html>"];
   var wstream = new Stream();
   var rstream = new MemoryStream();
   wstream.pipe(rstream);
@@ -52,17 +84,19 @@ test('cm.set(key, stream) saves stream, cm.getData(key, cb) retrieves data alone
     origDataArr.forEach(function (x) { wstream.emit('data', x); });
     wstream.emit('end');
   }, 0);
-  var contentType = 'text/plain';
-  cm.set(KEY, rstream, contentType, function (err, result) {
+  var contentType = 'text/html';
+  cm.set(KEY, rstream, contentType, meta, function (err, result) {
     t.isNull(err);
     cm.getData(KEY, function (err, data) {
       t.isNull(err);
-      var origData = origDataArr.join('');
-      t.equal(data, origData);
-      cm.getMeta(KEY, function (err, meta) {
-        var exptectedDigest = digest(origData);
-        t.equal(meta.digest, exptectedDigest);
-        done();
+      zlib.gzip(origDataArr.join(''), function (err, expectedGzipData) {
+        t.isNull(err);
+        var expectedGzipDigest = digest(expectedGzipData);
+        t.equal(digest(data), expectedGzipDigest);
+        cm.getMeta(KEY, function (err, meta) {
+          t.equal(meta.digest, expectedGzipDigest);
+          done();
+        });
       });
     });
   });
