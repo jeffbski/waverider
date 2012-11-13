@@ -10,6 +10,7 @@
   "engines": { "node": ">=0.8" },
   "dependencies": {
     "amdefine": "~0.0.2",
+    "react": "~0.6.3",
     "redis": "~0.8.2",
     "strata": "https://github.com/jeffbski/strata/tarball/v0.18.1-headNonZero"
   },
