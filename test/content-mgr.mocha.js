@@ -53,8 +53,10 @@ test('cm.ckey(host, path) calculates content key host:path', function () {
 
 test('cm.set(key, data, type) saves content, cm.getData(key, cb) retrieves data alone', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
-  cm.set(KEY, origContent.data, origContent.type, function (err, result) {
+  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len) {
     t.isNull(err);
+    t.equal(dataDigest, digest(origContent.data));
+    t.ok(len > 0);
     cm.getData(KEY, function (err, data) {
       t.isNull(err);
       t.equal(data, origContent.data);
@@ -71,15 +73,16 @@ test('cm.set(key, stream, type) saves stream, cm.getData(key, cb) retrieves data
     rwStream.end();
   }, 0);
   var contentType = 'text/plain';
-  cm.set(KEY, rwStream, contentType, function (err, result) {
+  cm.set(KEY, rwStream, contentType, function (err, dataDigest, len) {
     t.isNull(err);
     cm.getData(KEY, function (err, data) {
       t.isNull(err);
       var origData = origDataArr.join('');
       t.equal(data, origData);
       cm.getMeta(KEY, function (err, meta) {
-        var exptectedDigest = digest(origData);
-        t.equal(meta.digest, exptectedDigest);
+        var expectedDigest = digest(origData);
+        t.equal(meta.digest, expectedDigest);
+        t.equal(dataDigest, expectedDigest);
         done();
       });
     });
@@ -97,7 +100,7 @@ test('cm.set(key, stream, type, metaGzip) compresses and saves stream, cm.getDat
     rwStream.end();
   }, 0);
   var contentType = 'text/html';
-  cm.set(KEY, rwStream, contentType, meta, function (err, result) {
+  cm.set(KEY, rwStream, contentType, meta, function (err, dataDigest, len) {
     t.isNull(err);
     cm.getData(KEY, function (err, data) {
       t.isNull(err);
@@ -110,7 +113,7 @@ test('cm.set(key, stream, type, metaGzip) compresses and saves stream, cm.getDat
 
 test('cm.getMeta(key, cb) retrieves all the meta data', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
-  cm.set(KEY, origContent.data, origContent.type, function (err, result) {
+  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len) {
     t.isNull(err);
     cm.getMeta(KEY, function (err, obj) {
       t.isNull(err);
@@ -143,7 +146,7 @@ test('cm.getMeta(nonExistentKey, cb) retrieves null meta data', function (done) 
 
 test('cm.getData(key, cb) retrieves just the content', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
-  cm.set(KEY, origContent.data, origContent.type, function (err, result) {
+  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len) {
     t.isNull(err);
     cm.getData(KEY, function (err, content) {
       t.isNull(err);
@@ -169,7 +172,7 @@ test('cm.getData(nonExistentKey, cb) retrieves null content', function (done) {
 
 test('cm.getDataStream(key) returns a gzipped stream to the content', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
-  cm.set(KEY, origContent.data, origContent.type, function (err, result) {
+  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len) {
     t.isNull(err);
     var readStream = cm.getDataStream(KEY);
     readStream
@@ -203,7 +206,7 @@ test('cm.setData and cm.getDataStream save and retrieve large binary data', func
     process.nextTick(flow);
   }
   process.nextTick(flow);
-  cm.set(KEY, rwStream, 'application/octet-stream', function (err, result) {
+  cm.set(KEY, rwStream, 'application/octet-stream', function (err, dataDigest, len) {
     t.isNull(err);
     cm.getMeta(KEY, function (err, meta) {
       t.isNull(err);
@@ -219,7 +222,9 @@ test('cm.setData and cm.getDataStream save and retrieve large binary data', func
         .pipe(zlib.createGunzip())
         .pipe(digestStream('sha1', 'base64', function (digest, length) {
           t.equal(meta.len, compressedLen);
+          t.equal(len, compressedLen);
           t.equal(meta.digest, digest);
+          t.equal(dataDigest, digest);
           done();
         }));
     });

@@ -7,6 +7,7 @@
 var crypto = require('crypto');
 var zlib = require('zlib');
 var react = require('react');
+var passStream = require('pass-stream');
 var strata = require('strata');
 var mock = strata.mock;
 
@@ -34,7 +35,13 @@ var bar = {
   data: '<html><body><h1>Hello World!</h1></body></html>',
   type: 'text/html'
 };
-var arrData = [ foo, bar ];
+var cat = {
+  host: 'localhost',
+  path: '/cat',
+  data: '<html><body><h1>Hello World!</h1></body></html>',
+  type: 'text/html'
+};
+var arrData = [ foo, bar, cat ];
 arrData.forEach(function (item) {
   item.key = cm.ckey(item.host, item.path);
   item.digest = digest(item.data);
@@ -48,21 +55,23 @@ function addGzipData(item, cb) {
   });
 }
 
-var setup = react('setup', 'foo, bar, cb -> err', { locals: { cm: cm }},
+var setup = react('setup', 'foo, bar, cat, cb -> err', { locals: { cm: cm }},
   'cm.set', 'foo.key, foo.data, foo.type, cb -> err',
   addGzipData, 'foo, cb -> err',
   'cm.set', 'bar.key, bar.data, bar.type, cb -> err',
-  addGzipData, 'foo, cb -> err'
+  addGzipData, 'foo, cb -> err',
+  addGzipData, 'cat, cb -> err'
 );
 
-var cleanup = react('cleanup', 'foo, bar, cb -> err', { locals: { cm: cm }},
+var cleanup = react('cleanup', 'foo, bar, cat, cb -> err', { locals: { cm: cm }},
   'cm.del', 'foo.key, cb -> err',
-  'cm.del', 'bar.key, cb -> err'
+  'cm.del', 'bar.key, cb -> err',
+  'cm.del', 'cat.key, cb -> err'
 );
 
 
-before(function (done) { setup(foo, bar, done); });
-after(function (done) { cleanup(foo, bar, done); });
+before(function (done) { setup(foo, bar, cat, done); });
+after(function (done) { cleanup(foo, bar, cat, done); });
 
 test('GET /foo returns Hello World', function (done) {
   var env = mock.env({
@@ -132,7 +141,27 @@ test('HEAD /foo accepts gzip returns meta', function (done) {
   });
 });
 
-
+test('PUT /cat stores and returns ETag', function (done) {
+  var env = mock.env({
+    requestMethod: 'PUT',
+    serverName: cat.host,
+    pathInfo: cat.path,
+    input: passStream(),
+    headers: { 'Content-Type': cat.type }
+  });
+  env.input.end(cat.data);
+  mock.call(app, env, function (err, status, headers, body) {
+    t.equal(headers.Etag, cat.digest);
+    cm.getMeta(cat.key, function (err, meta) {
+      t.equal(meta.type, cat.type);
+      t.equal(meta.len, cat.gzipData.length);
+      t.equal(meta.digest, cat.digest);
+      t.isNotNull(meta.mtime);
+      t.equal(meta['Content-Encoding'], 'gzip');
+      done();
+    });
+  });
+});
 
 test('/admin returns Hi', function (done) {
   var env = mock.env({
