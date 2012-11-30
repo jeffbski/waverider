@@ -12,13 +12,13 @@
     "amdefine": "~0.0.2",
     "react": "~0.6.3",
     "redis": "~0.8.2",
-    "strata": "https://github.com/jeffbski/strata/tarball/v0.18.1-headNonZero",
+    "strata": "~0.19.2",
     "pass-stream": "~0.0.6",
     "digest-stream": "~0.0.6",
     "length-stream": "~0.0.6",
     "redis-rstream": "~0.0.7",
     "redis-wstream": "~0.0.8",
-    "accum": "~0.0.6"
+    "accum": "~0.1.1"
   },
   "devDependencies": {
     "requirejs": "~2.1.1",

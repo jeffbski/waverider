@@ -1,9 +1,7 @@
 'use strict';
 
 var chai = require('chai-stack');
-var Stream = require('stream');
 var cm = require('../lib/content-mgr');
-var digest = require('../lib/digest');
 var crypto = require('crypto');
 var zlib = require('zlib');
 var passStream = require('pass-stream');
@@ -25,6 +23,10 @@ function writeFn(data) {
 
 function createBufferThroughStream() {
   return passStream(writeFn);
+}
+
+function digest(data) {
+  return crypto.createHash('sha1').update(data).digest('base64');
 }
 
 suite('content-mgr');
@@ -60,36 +62,6 @@ test('cm.set(key, data, type) saves content, cm.getData(key, cb) retrieves data 
     });
   });
 });
-
-// test('cm.set(key, data, type, metaGzip) gzips and content, cm.getData(key, cb) retrieves gzipped data', function (done) {
-//   var origContent = {
-//     data: '<html><body><div>one</div><div>two</div><div>one</div><div>two</div></body></html>',
-//     type: 'text/html'
-//   };
-//   var meta = { preprocess: ['gzip'] };
-//   cm.set(KEY, origContent.data, origContent.type, meta, function (err, result) {
-//     t.isNull(err);
-//     zlib.gzip(origContent.data, function (err, expectedGzipData) {
-//       t.isNull(err);
-//       cm.getData(KEY, function (err, data) {
-//         t.isNull(err);
-//         var expectedGzipDigest = digest(expectedGzipData);
-//         t.equal(digest(data), expectedGzipDigest);
-//         cm.getMeta(KEY, function (err, meta) {
-//           t.isNull(err);
-//           t.equal(meta.digest, expectedGzipDigest);
-//           t.equal(meta['Content-Encoding'], 'gzip');
-//           t.isUndefined(meta.preprocess, 'preprocess is stripped out in processing');
-//           zlib.gunzip(data, function (err, verifyData) {
-//             t.isNull(err);
-//             t.equal(verifyData, origContent.data);
-//             done();
-//           });
-//         });
-//       });
-//     });
-//   });
-// });
 
 test('cm.set(key, stream, type) saves stream, cm.getData(key, cb) retrieves data alone', function (done) {
   var origDataArr = ["Hello ", "World", " Goodbye ", "World"];
@@ -203,7 +175,7 @@ test('cm.getDataStream(key) returns a gzipped stream to the content', function (
     readStream
       .on('error', function (err) { done(err); })
       .pipe(zlib.createGunzip())
-      .pipe(accum.string(function (err, alldata) {
+      .pipe(accum.string(function (alldata) {
         t.equal(alldata, origContent.data);
         done();
       }));
