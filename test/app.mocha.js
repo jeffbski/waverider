@@ -104,6 +104,27 @@ test('HEAD /foo returns meta', function (done) {
   });
 });
 
+test('HEAD /foo If-None-Match etag returns 304', function (done) {
+  var env = mock.env({
+    requestMethod: 'HEAD',
+    serverName: foo.host,
+    pathInfo: foo.path
+  });
+  mock.call(app, env, function (err, status, headers, body) {
+    t.equal(headers.Etag, foo.digest);
+    env.headers = { 'if-none-match': headers.Etag };
+    mock.call(app, env, function (err, status, headers, body) {
+      t.equal(status, 304, 'should be status not modified');
+      t.equal(body, '');
+      done();
+    });
+  });
+});
+
+// TODO test if etag doesn't match
+// TODO GET etag match
+// TODO GET etag not-match
+
 test('GET /foo accepts gzip returns compressed Hello World', function (done) {
   var env = mock.env({
     requestMethod: 'GET',
