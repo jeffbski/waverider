@@ -32,6 +32,7 @@ function digest(data) {
 suite('content-mgr');
 
 var KEY = '/foo';
+var KEY2 = '/bar';
 
 beforeEach(function (done) {
   deleteAll(done);
@@ -42,7 +43,10 @@ after(function (done) {
 });
 
 function deleteAll(cb) {
-  cm.del(KEY, cb);
+  cm.del(KEY, function (err) {
+    if (err) return cb(err);
+    cm.del(KEY2, cb);
+  });
 }
 
 test('cm.ckey(host, path) calculates content key host:path', function () {
@@ -231,3 +235,43 @@ test('cm.setData and cm.getDataStream save and retrieve large binary data', func
   });
 });
 
+test('setFromSource render HTML, save to key', function (done) {
+  var data = '# Hello';
+  cm.setFromSource(KEY, data, 'text/x-web-markdown', {}, function (err, digest, length) {
+    if (err) return done(err);
+    cm.getMeta(KEY, function (err, meta) {
+      if (err) return done(err);
+      t.equal(meta.type, 'text/html');
+      t.equal(meta.sourceType, 'text/x-web-markdown');
+      t.equal(meta.htmlType, 'fragment');
+      cm.getData(KEY, function (err, htmlDataBuff) {
+        if (err) return done(err);
+        var expected = '<h1>Hello</h1>\n';
+        t.equal(htmlDataBuff.toString(), expected);
+        done();
+      });
+    });
+  });
+});
+
+test('setFromSourceKey retrieves source, render HTML, save to key', function (done) {
+  var data = '# Hello';
+  cm.set(KEY, data, 'text/x-web-markdown', {}, function (err, rdigest, length) {
+    cm.setFromSourceKey(KEY2, KEY, function (err, rdigest, length) {
+      cm.getMeta(KEY2, function (err, meta) {
+        if (err) return done(err);
+        t.equal(meta.type, 'text/html');
+        t.equal(meta.sourceType, 'text/x-web-markdown');
+        t.equal(meta.htmlType, 'fragment');
+        t.equal(meta.srcKey, KEY);
+        t.isNotNull(meta.srcId);
+        cm.getData(KEY2, function (err, htmlDataBuff) {
+          if (err) return done(err);
+          var expected = '<h1>Hello</h1>\n';
+          t.equal(htmlDataBuff.toString(), expected);
+          done();
+        });
+      });
+    });
+  });
+});
