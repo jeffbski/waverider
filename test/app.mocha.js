@@ -74,6 +74,7 @@ before(function (done) { setup(foo, bar, cat, done); });
 after(function (done) { cleanup(foo, bar, cat, done); });
 
 test('GET /foo returns Hello World', function (done) {
+  var now = Date.now();
   var env = mock.env({
     requestMethod: 'GET',
     serverName: foo.host,
@@ -84,7 +85,6 @@ test('GET /foo returns Hello World', function (done) {
     t.equal(headers['Content-Type'], foo.type);
     t.equal(headers['Transfer-Encoding'], 'chunked');
     t.equal(headers.Etag, foo.digest);
-    t.isString(headers['Last-Modified'], 'should have last modified date');
     done();
   });
 });
@@ -99,7 +99,6 @@ test('HEAD /foo returns meta', function (done) {
     t.equal(headers['Content-Type'], foo.type);
     t.equal(headers['Transfer-Encoding'], 'chunked');
     t.equal(headers.Etag, foo.digest);
-    t.isString(headers['Last-Modified'], 'should have last modified date');
     done();
   });
 });
@@ -185,7 +184,6 @@ test('GET /foo accepts gzip returns compressed Hello World', function (done) {
     t.equal(headers['Content-Type'], foo.type);
     t.equal(headers['Content-Length'], foo.gzipData.length);
     t.equal(headers.Etag, foo.digest);
-    t.isString(headers['Last-Modified'], 'should have last modified date');
     done();
   });
 });
@@ -203,7 +201,6 @@ test('HEAD /foo accepts gzip returns meta', function (done) {
     t.equal(headers['Content-Type'], foo.type);
     t.equal(headers['Content-Length'], foo.gzipData.length);
     t.equal(headers.Etag, foo.digest);
-    t.isString(headers['Last-Modified'], 'should have last modified date');
     done();
   });
 });
