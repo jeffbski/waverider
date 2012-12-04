@@ -13,6 +13,7 @@ var mock = strata.mock;
 
 var app = require('../lib/waverider');
 var cm = require('../lib/content-mgr');
+var config = require('../lib/config');
 
 var chai = require('chai-stack');
 var t = chai.assert;
@@ -74,7 +75,6 @@ before(function (done) { setup(foo, bar, cat, done); });
 after(function (done) { cleanup(foo, bar, cat, done); });
 
 test('GET /foo returns Hello World', function (done) {
-  var now = Date.now();
   var env = mock.env({
     requestMethod: 'GET',
     serverName: foo.host,
@@ -85,6 +85,8 @@ test('GET /foo returns Hello World', function (done) {
     t.equal(headers['Content-Type'], foo.type);
     t.equal(headers['Transfer-Encoding'], 'chunked');
     t.equal(headers.Etag, foo.digest);
+    var expires = Date.parse(headers.Expires);
+    t.closeTo(expires, Date.now() + config.expireSecs * 1000, 1000, 'expires should be in the future');
     done();
   });
 });
@@ -99,6 +101,20 @@ test('HEAD /foo returns meta', function (done) {
     t.equal(headers['Content-Type'], foo.type);
     t.equal(headers['Transfer-Encoding'], 'chunked');
     t.equal(headers.Etag, foo.digest);
+    var expires = Date.parse(headers.Expires);
+    t.closeTo(expires, Date.now() + config.expireSecs * 1000, 1000, 'expires should be in the future');
+    done();
+  });
+});
+
+test('HEAD /bar excludes expires since is text/html', function (done) {
+  var env = mock.env({
+    requestMethod: 'HEAD',
+    serverName: bar.host,
+    pathInfo: bar.path
+  });
+  mock.call(app, env, function (err, status, headers, body) {
+    t.isUndefined(headers.Expires);
     done();
   });
 });
@@ -115,6 +131,7 @@ test('HEAD /foo If-None-Match etag returns 304', function (done) {
     mock.call(app, env, function (err, status, headers, body) {
       t.equal(status, 304, 'should be status not modified');
       t.equal(body, '');
+      t.isUndefined(headers.Expires);
       done();
     });
   });
@@ -131,6 +148,8 @@ test('HEAD /foo If-None-Match wrongEtag returns 200', function (done) {
     env.headers = { 'if-none-match': 'FooFakeDigest' };
     mock.call(app, env, function (err, status, headers, body) {
       t.equal(status, 200, 'should be status success since etag wont match');
+      var expires = Date.parse(headers.Expires);
+      t.closeTo(expires, Date.now() + config.expireSecs * 1000, 1000, 'expires should be in the future');
       done();
     });
   });
@@ -148,6 +167,7 @@ test('GET /foo If-None-Match etag returns 304', function (done) {
     mock.call(app, env, function (err, status, headers, body) {
       t.equal(status, 304, 'should be status not modified');
       t.equal(body, '');
+      t.isUndefined(headers.Expires);
       done();
     });
   });
@@ -164,6 +184,8 @@ test('GET /foo If-None-Match wrongEtag returns 200', function (done) {
     env.headers = { 'if-none-match': 'FooFakeDigest' };
     mock.call(app, env, function (err, status, headers, body) {
       t.equal(status, 200, 'should be status success since etag wont match');
+      var expires = Date.parse(headers.Expires);
+      t.closeTo(expires, Date.now() + config.expireSecs * 1000, 1000, 'expires should be in the future');
       done();
     });
   });
@@ -184,6 +206,8 @@ test('GET /foo accepts gzip returns compressed Hello World', function (done) {
     t.equal(headers['Content-Type'], foo.type);
     t.equal(headers['Content-Length'], foo.gzipData.length);
     t.equal(headers.Etag, foo.digest);
+    var expires = Date.parse(headers.Expires);
+    t.closeTo(expires, Date.now() + config.expireSecs * 1000, 1000, 'expires should be in the future');
     done();
   });
 });
@@ -201,6 +225,8 @@ test('HEAD /foo accepts gzip returns meta', function (done) {
     t.equal(headers['Content-Type'], foo.type);
     t.equal(headers['Content-Length'], foo.gzipData.length);
     t.equal(headers.Etag, foo.digest);
+    var expires = Date.parse(headers.Expires);
+    t.closeTo(expires, Date.now() + config.expireSecs * 1000, 1000, 'expires should be in the future');
     done();
   });
 });
@@ -222,6 +248,7 @@ test('PUT /cat stores and returns ETag', function (done) {
       t.equal(meta.digest, cat.digest);
       t.isNotNull(meta.mtime);
       t.equal(meta['Content-Encoding'], 'gzip');
+      t.isUndefined(headers.Expires);
       done();
     });
   });
@@ -234,6 +261,7 @@ test('/admin returns Hi', function (done) {
   });
   mock.call(app, env, function (err, status, headers, body) {
     t.equal(body, 'Hi');
+    t.isUndefined(headers.Expires);
     done();
   });
 });
