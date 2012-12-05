@@ -254,6 +254,25 @@ test('setFromSource render HTML, save to key', function (done) {
   });
 });
 
+test('setFromSource with wrapHTMLFragment=true render HTML, save to key', function (done) {
+  var data = '# Hello';
+  cm.setFromSource(KEY, data, 'text/x-web-markdown', { wrapHTMLFragment: true },
+                   function (err, digest, length) {
+    if (err) return done(err);
+    cm.getMeta(KEY, function (err, meta) {
+      if (err) return done(err);
+      t.equal(meta.type, 'text/html');
+      t.equal(meta.sourceType, 'text/x-web-markdown');
+      t.notEqual(meta.htmlType, 'fragment');
+      cm.getData(KEY, function (err, htmlDataBuff) {
+        if (err) return done(err);
+        t.notEqual(htmlDataBuff.toString().indexOf('<html'), -1, 'should have wrapped html fragment');
+        done();
+      });
+    });
+  });
+});
+
 test('setFromSourceKey retrieves source, render HTML, save to key', function (done) {
   var data = '# Hello';
   cm.set(KEY, data, 'text/x-web-markdown', {}, function (err, rdigest, length) {
@@ -269,6 +288,27 @@ test('setFromSourceKey retrieves source, render HTML, save to key', function (do
           if (err) return done(err);
           var expected = '<h1>Hello</h1>\n';
           t.equal(htmlDataBuff.toString(), expected);
+          done();
+        });
+      });
+    });
+  });
+});
+
+test('setFromSourceKey wrapHTMLFragment=true retrieves source, render HTML, save to key', function (done) {
+  var data = '# Hello';
+  cm.set(KEY, data, 'text/x-web-markdown', { wrapHTMLFragment: true }, function (err, rdigest, length) {
+    cm.setFromSourceKey(KEY2, KEY, function (err, rdigest, length) {
+      cm.getMeta(KEY2, function (err, meta) {
+        if (err) return done(err);
+        t.equal(meta.type, 'text/html');
+        t.equal(meta.sourceType, 'text/x-web-markdown');
+        t.notEqual(meta.htmlType, 'fragment');
+        t.equal(meta.srcKey, KEY);
+        t.isNotNull(meta.srcId);
+        cm.getData(KEY2, function (err, htmlDataBuff) {
+          if (err) return done(err);
+          t.notEqual(htmlDataBuff.toString().indexOf('<html'), -1, 'should have wrapped html fragment');
           done();
         });
       });

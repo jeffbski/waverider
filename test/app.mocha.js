@@ -70,9 +70,20 @@ var cleanup = react('cleanup', 'foo, bar, cat, cb -> err', { locals: { cm: cm }}
   'cm.del', 'cat.key, cb -> err'
 );
 
-
 before(function (done) { setup(foo, bar, cat, done); });
 after(function (done) { cleanup(foo, bar, cat, done); });
+
+var TRANSIENT = {
+  host: 'localhost',
+  path: '/transient1'
+};
+TRANSIENT.key = cm.ckey(TRANSIENT.host, TRANSIENT.path);
+function cleanupTransient(cb) {
+  cm.del(TRANSIENT.key, cb);
+}
+beforeEach(cleanupTransient);
+afterEach(cleanupTransient);
+
 
 test('GET /foo returns Hello World', function (done) {
   var env = mock.env({
@@ -250,6 +261,32 @@ test('PUT /cat stores and returns ETag', function (done) {
       t.equal(meta['Content-Encoding'], 'gzip');
       t.isUndefined(headers.Expires);
       done();
+    });
+  });
+});
+
+test('GET w/gzip returns full HTML', function (done) {
+  var data = '# Hello';
+  cm.setFromSource(TRANSIENT.key, data, 'text/x-web-markdown', { wrapHTMLFragment: true },
+                   function (err, rdigest, len) {
+    if (err) return done(err);
+    var env = mock.env({
+      requestMethod: 'GET',
+      serverName: TRANSIENT.host,
+      pathInfo: TRANSIENT.path,
+      headers: {
+        'Accept-Encoding': 'gzip'
+      }
+    });
+    env.mockReturnsBuffer = true;
+    mock.call(app, env, function (err, status, headers, body) {
+      zlib.gunzip(body, function (err, html) {
+        if (err) return done(err);
+        t.equal(headers['Content-Type'], 'text/html');
+        t.isDefined(headers['Content-Length']);
+        t.notEqual(html.toString().indexOf('<html>'), -1, 'should be full html');
+        done();
+      });
     });
   });
 });
