@@ -55,7 +55,7 @@ test('cm.ckey(host, path) calculates content key host:path', function () {
   t.equal(cm.ckey('abc.server.com', '/dog/food'), 'abc.server.com:/dog/food');
 });
 
-test('cm.set(key, data, type) saves content, cm.getData(key, cb) retrieves data alone', function (done) {
+test('cm.set(key, data, type, meta) saves content, cm.getData(key, cb) retrieves data alone', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
   cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len) {
     t.isNull(err);
@@ -117,7 +117,15 @@ test('cm.set(key, stream, type, metaGzip) compresses and saves stream, cm.getDat
 
 test('cm.getMeta(key, cb) retrieves all the meta data', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
-  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len) {
+  var meta = {
+    title: 'My Foo',
+    author: 'John Doe',
+    'publish-start': '2012-12-01T23:23:59Z',
+    'publish-end': '2012-12-25T23:23:59Z',
+    keywords: 'foo, bar, baz',
+    'created': '2012-01-30T23:59:59Z'
+  };
+  cm.set(KEY, origContent.data, origContent.type, meta, function (err, dataDigest, len) {
     t.isNull(err);
     cm.getMeta(KEY, function (err, obj) {
       t.isNull(err);
@@ -125,6 +133,9 @@ test('cm.getMeta(key, cb) retrieves all the meta data', function (done) {
       t.equal(obj.type, origContent.type);
       t.equal(obj.digest, digest(origContent.data));
       t.equal(obj['Content-Encoding'], 'gzip');
+      Object.keys(meta).forEach(function (k) {
+        t.equal(obj[k], meta[k], 'should have ' + k);
+      });
       zlib.gzip(origContent.data, function (err, data) {
         t.equal(obj.len, data.length);
         done();

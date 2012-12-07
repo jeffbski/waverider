@@ -102,6 +102,70 @@ test('GET /foo returns Hello World', function (done) {
   });
 });
 
+test('GET url includes meta data as headers prefixed with wr-', function (done) {
+  var META = {
+    title: 'My Foo',
+    author: 'John Doe',
+    'publish-start': '2012-12-01T23:23:59Z',
+    'publish-end': '2012-12-25T23:23:59Z',
+    keywords: 'foo, bar, baz',
+    'created': '2012-01-30T23:59:59Z'
+  };
+  cm.set(TRANSIENT.key, 'Hello', 'text/plain', META, function (err, rdigest, len) {
+    if (err) return done(err);
+    var env = mock.env({
+      requestMethod: 'GET',
+      serverName: TRANSIENT.host,
+      pathInfo: TRANSIENT.path
+    });
+    mock.call(app, env, function (err, status, headers, body) {
+      t.equal(headers['Content-Type'], foo.type);
+      Object.keys(META).forEach(function (k) {
+        t.equal(headers['wr-' + k], META[k], 'should have ' + k);
+      });
+      var expWRHeaders = Object.keys(META).map(function (k) { return 'wr-' + k; });
+      var WR_REGEX = /^wr-/;
+      var otherKeys = Object.keys(headers).filter(function (k) {
+        return (WR_REGEX.test(k) && expWRHeaders.indexOf(k) === -1);
+      });
+      t.deepEqual(otherKeys, [], 'should be no other keys');
+      done();
+    });
+  });
+});
+
+test('HEAD url includes meta data as headers prefixed with wr-', function (done) {
+  var META = {
+    title: 'My Foo',
+    author: 'John Doe',
+    'publish-start': '2012-12-01T23:23:59Z',
+    'publish-end': '2012-12-25T23:23:59Z',
+    keywords: 'foo, bar, baz',
+    'created': '2012-01-30T23:59:59Z'
+  };
+  cm.set(TRANSIENT.key, 'Hello', 'text/plain', META, function (err, rdigest, len) {
+    if (err) return done(err);
+    var env = mock.env({
+      requestMethod: 'HEAD',
+      serverName: TRANSIENT.host,
+      pathInfo: TRANSIENT.path
+    });
+    mock.call(app, env, function (err, status, headers, body) {
+      t.equal(headers['Content-Type'], foo.type);
+      Object.keys(META).forEach(function (k) {
+        t.equal(headers['wr-' + k], META[k], 'should have ' + k);
+      });
+      var expWRHeaders = Object.keys(META).map(function (k) { return 'wr-' + k; });
+      var WR_REGEX = /^wr-/;
+      var otherKeys = Object.keys(headers).filter(function (k) {
+        return (WR_REGEX.test(k) && expWRHeaders.indexOf(k) === -1);
+      });
+      t.deepEqual(otherKeys, [], 'should be no other keys');
+      done();
+    });
+  });
+});
+
 test('HEAD /foo returns meta', function (done) {
   var env = mock.env({
     requestMethod: 'HEAD',
@@ -260,6 +324,48 @@ test('PUT /cat stores and returns ETag', function (done) {
       t.isNotNull(meta.mtime);
       t.equal(meta['Content-Encoding'], 'gzip');
       t.isUndefined(headers.Expires);
+      done();
+    });
+  });
+});
+
+test('PUT /cat stores "wr-" headers and returns ETag', function (done) {
+  var META = {
+    title: 'My Foo',
+    author: 'John Doe',
+    'publish-start': '2012-12-01T23:23:59Z',
+    'publish-end': '2012-12-25T23:23:59Z',
+    keywords: 'foo, bar, baz',
+    'created': '2012-01-30T23:59:59Z'
+  };
+  var env = mock.env({
+    requestMethod: 'PUT',
+    serverName: cat.host,
+    pathInfo: cat.path,
+    input: passStream(),
+    headers: {
+      'Content-Type': cat.type,
+      'wr-title': 'My Foo',
+      'wr-author': 'John Doe',
+      'wr-publish-start': '2012-12-01T23:23:59Z',
+      'wr-publish-end': '2012-12-25T23:23:59Z',
+      'wr-keywords': 'foo, bar, baz',
+      'wr-created': '2012-01-30T23:59:59Z'
+    }
+  });
+  env.input.end(cat.data);
+  mock.call(app, env, function (err, status, headers, body) {
+    t.equal(headers.Etag, cat.digest);
+    cm.getMeta(cat.key, function (err, meta) {
+      t.equal(meta.type, cat.type);
+      t.equal(meta.len, cat.gzipData.length);
+      t.equal(meta.digest, cat.digest);
+      t.isNotNull(meta.mtime);
+      t.equal(meta['Content-Encoding'], 'gzip');
+      t.isUndefined(headers.Expires);
+      Object.keys(META).forEach(function (k) {
+        t.equal(meta[k], META[k], 'should have ' + k);
+      });
       done();
     });
   });
