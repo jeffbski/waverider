@@ -57,10 +57,11 @@ test('cm.ckey(host, path) calculates content key host:path', function () {
 
 test('cm.set(key, data, type, meta) saves content, cm.getData(key, cb) retrieves data alone', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
-  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len) {
+  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len, cid) {
     t.isNull(err);
     t.equal(dataDigest, digest(origContent.data));
     t.ok(len > 0);
+    t.ok(cid, 'should return content id');
     cm.getData(KEY, function (err, data) {
       t.isNull(err);
       t.equal(data, origContent.data);
@@ -68,6 +69,7 @@ test('cm.set(key, data, type, meta) saves content, cm.getData(key, cb) retrieves
     });
   });
 });
+
 
 test('cm.set(key, stream, type) saves stream, cm.getData(key, cb) retrieves data alone', function (done) {
   var origDataArr = ["Hello ", "World", " Goodbye ", "World"];
@@ -77,7 +79,7 @@ test('cm.set(key, stream, type) saves stream, cm.getData(key, cb) retrieves data
     rwStream.end();
   }, 0);
   var contentType = 'text/plain';
-  cm.set(KEY, rwStream, contentType, function (err, dataDigest, len) {
+  cm.set(KEY, rwStream, contentType, function (err, dataDigest, len, cid) {
     t.isNull(err);
     cm.getData(KEY, function (err, data) {
       t.isNull(err);
@@ -104,7 +106,7 @@ test('cm.set(key, stream, type, metaGzip) compresses and saves stream, cm.getDat
     rwStream.end();
   }, 0);
   var contentType = 'text/html';
-  cm.set(KEY, rwStream, contentType, meta, function (err, dataDigest, len) {
+  cm.set(KEY, rwStream, contentType, meta, function (err, dataDigest, len, cid) {
     t.isNull(err);
     cm.getData(KEY, function (err, data) {
       t.isNull(err);
@@ -125,9 +127,38 @@ test('cm.getMeta(key, cb) retrieves all the meta data', function (done) {
     keywords: 'foo, bar, baz',
     'created': '2012-01-30T23:59:59Z'
   };
-  cm.set(KEY, origContent.data, origContent.type, meta, function (err, dataDigest, len) {
+  cm.set(KEY, origContent.data, origContent.type, meta, function (err, dataDigest, len, cid) {
     t.isNull(err);
     cm.getMeta(KEY, function (err, obj) {
+      t.isNull(err);
+      t.isObject(obj);
+      t.equal(obj.type, origContent.type);
+      t.equal(obj.digest, digest(origContent.data));
+      t.equal(obj['Content-Encoding'], 'gzip');
+      Object.keys(meta).forEach(function (k) {
+        t.equal(obj[k], meta[k], 'should have ' + k);
+      });
+      zlib.gzip(origContent.data, function (err, data) {
+        t.equal(obj.len, data.length);
+        done();
+      });
+    });
+  });
+});
+
+test('cm.getMeta(cid, cb) retrieves all the meta data for a CID', function (done) {
+  var origContent = { data: 'Foo', type: 'text/plain' };
+  var meta = {
+    title: 'My Foo',
+    author: 'John Doe',
+    'publish-start': '2012-12-01T23:23:59Z',
+    'publish-end': '2012-12-25T23:23:59Z',
+    keywords: 'foo, bar, baz',
+    'created': '2012-01-30T23:59:59Z'
+  };
+  cm.set(KEY, origContent.data, origContent.type, meta, function (err, dataDigest, len, cid) {
+    t.isNull(err);
+    cm.getMeta(cid, function (err, obj) {
       t.isNull(err);
       t.isObject(obj);
       t.equal(obj.type, origContent.type);
@@ -161,7 +192,7 @@ test('cm.getMeta(nonExistentKey, cb) retrieves null meta data', function (done) 
 
 test('cm.getData(key, cb) retrieves just the content', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
-  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len) {
+  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len, cid) {
     t.isNull(err);
     cm.getData(KEY, function (err, content) {
       t.isNull(err);
@@ -183,13 +214,58 @@ test('cm.getData(nonExistentKey, cb) retrieves null content', function (done) {
   });
 });
 
+test('cm.getData(cid) retrieves content by id', function (done) {
+  var origContent = { data: 'Foo', type: 'text/plain' };
+  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len, cid) {
+    if (err) return done(err);
+    t.ok(cid, 'should return content id');
+    cm.getData(cid, function (err, data) {
+      if (err) return done(err);
+      t.equal(data, origContent.data);
+      done();
+    });
+  });
+});
+
+
+test('cm.getAllVersions(key, options, cb) retrieves available cids', function (done) {
+  var origContent = { data: 'Foo', type: 'text/plain' };
+  var nextContent = { data: 'Bar', type: 'text/css' };
+  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len, cid0) {
+    if (err) return done(err);
+    cm.set(KEY, nextContent.data, nextContent.type, function (err, dataDigest, len, cid1) {
+      if (err) return done(err);
+      cm.getAllVersions(KEY, {}, function (err, cids) {
+        if (err) return done(err);
+        t.deepEqual(cids, [cid1, cid0], 'should return arr with most recent first');
+        done();
+      });
+    });
+  });
+});
+
 
 
 test('cm.getDataStream(key) returns a gzipped stream to the content', function (done) {
   var origContent = { data: 'Foo', type: 'text/plain' };
-  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len) {
+  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len, cid) {
     t.isNull(err);
     var readStream = cm.getDataStream(KEY);
+    readStream
+      .on('error', function (err) { done(err); })
+      .pipe(zlib.createGunzip())
+      .pipe(accum.string(function (alldata) {
+        t.equal(alldata, origContent.data);
+        done();
+      }));
+  });
+});
+
+test('cm.getDataStream(cid) returns a gzipped stream to the content at cid', function (done) {
+  var origContent = { data: 'Foo', type: 'text/plain' };
+  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len, cid) {
+    t.isNull(err);
+    var readStream = cm.getDataStream(cid);
     readStream
       .on('error', function (err) { done(err); })
       .pipe(zlib.createGunzip())
@@ -221,7 +297,7 @@ test('cm.setData and cm.getDataStream save and retrieve large binary data', func
     process.nextTick(flow);
   }
   process.nextTick(flow);
-  cm.set(KEY, rwStream, 'application/octet-stream', function (err, dataDigest, len) {
+  cm.set(KEY, rwStream, 'application/octet-stream', function (err, dataDigest, len, cid) {
     t.isNull(err);
     cm.getMeta(KEY, function (err, meta) {
       t.isNull(err);
