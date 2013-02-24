@@ -6,7 +6,7 @@
 
 ## Flow
 
- - put staging.foo.com/foo.md - text/markdown
+ - put staging.foo.com/foo.md - text/markdown, triggers creation of text/html at foo
  - get staging.foo.com/foo or foo.html - text/html
  - get staging.foo.com/foo.md - text/markdown
  - get staging.foo.com/foo.md?cid=1234 - get md for specific version
