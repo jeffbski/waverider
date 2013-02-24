@@ -33,12 +33,15 @@ suite('content-mgr');
 
 var KEY = '/foo';
 var KEY2 = '/bar';
+var defaultCMConfig = { };
 
 beforeEach(function (done) {
+  cm.config(defaultCMConfig);
   deleteAll(done);
 });
 
 after(function (done) {
+  cm.config(defaultCMConfig);
   deleteAll(done);
 });
 
@@ -69,7 +72,6 @@ test('cm.set(key, data, type, meta) saves content, cm.getData(key, cb) retrieves
     });
   });
 });
-
 
 test('cm.set(key, stream, type) saves stream, cm.getData(key, cb) retrieves data alone', function (done) {
   var origDataArr = ["Hello ", "World", " Goodbye ", "World"];
@@ -239,6 +241,33 @@ test('cm.getAllVersions(key, options, cb) retrieves available cids', function (d
         if (err) return done(err);
         t.deepEqual(cids, [cid1, cid0], 'should return arr with most recent first');
         done();
+      });
+    });
+  });
+});
+
+test('cm.config(newConfig) sets config, cm.config() retrieves config', function () {
+  var newConfig = { foo: 'bar' };
+  cm.config(newConfig);
+  t.deepEqual(cm.config(), newConfig);
+});
+
+test('with cm.config({revisions:2}) cm.set keeps only 2 revisions', function (done) {
+  var origContent = { data: 'Foo', type: 'text/plain' };
+  var nextContent = { data: 'Bar', type: 'text/css' };
+  var thirdContent = { data: 'Cat', type: 'text/cat' };
+  cm.config({ revisions: 2 });
+  cm.set(KEY, origContent.data, origContent.type, function (err, dataDigest, len, cid0) {
+    if (err) return done(err);
+    cm.set(KEY, nextContent.data, nextContent.type, function (err, dataDigest, len, cid1) {
+      if (err) return done(err);
+      cm.set(KEY, thirdContent.data, thirdContent.type, function (err, dataDigest, len, cid2) {
+        if (err) return done(err);
+        cm.getAllVersions(KEY, {}, function (err, cids) {
+          if (err) return done(err);
+          t.deepEqual(cids, [cid2, cid1], 'should return arr with most recent first, limit 2');
+          done();
+        });
       });
     });
   });
