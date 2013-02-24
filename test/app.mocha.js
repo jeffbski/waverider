@@ -13,7 +13,7 @@ var mock = strata.mock;
 
 var app = require('../lib/waverider');
 var cm = require('../lib/content-mgr');
-var config = require('../lib/config');
+var config = require('../config');
 
 var chai = require('chai-stack');
 var t = chai.assert;
